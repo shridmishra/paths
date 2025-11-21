@@ -61,7 +61,8 @@ const pathData = {
     ]
 }
 
-export default function PathViewPage({ params }: { params: { id: string } }) {
+export default async function PathViewPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
     const completedLessons = pathData.modules.reduce(
         (acc, module) => acc + module.lessons.filter(l => l.completed).length,
         0

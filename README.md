@@ -1,6 +1,37 @@
-# shadcn/ui monorepo template
+# Paths Learning Platform
 
-This template is for creating a monorepo with shadcn/ui.
+A monorepo for the Paths learning platform containing the web application and backend API.
+
+## Apps
+
+- **web**: Next.js frontend application
+- **api**: Express + Prisma + PostgreSQL backend
+
+## Quick Start
+
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
+
+2. **Start the database:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Setup the backend:**
+   ```bash
+   cd apps/api
+   cp .env.example .env
+   # Edit .env if needed (default values work with docker-compose)
+   pnpm db:push
+   cd ../..
+   ```
+
+4. **Start development servers:**
+   ```bash
+   pnpm dev
+   ```
 
 ## Usage
 
