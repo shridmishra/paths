@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { prisma } from '@workspace/db';
 import { createApp } from './app.js';
-import { logger } from './lib/logger.js';
+import { logger } from './utils/logger.util.js';
 
 // Load environment variables
 dotenv.config();
