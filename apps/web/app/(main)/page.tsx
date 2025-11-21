@@ -3,7 +3,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar"
 import { Button } from "@workspace/ui/components/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
-import { BookOpen, Clock, Users, Star, TrendingUp, Flame } from "lucide-react"
+import { BookOpen, Clock, Users, Star, TrendingUp, Flame, ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 // Mock data for paths
@@ -95,75 +95,66 @@ const paths = [
 ]
 
 function PathCard({ path }: { path: typeof paths[0] }) {
-    const difficultyColors = {
-        Beginner: "bg-green-500/10 text-green-500 border-green-500/20",
-        Intermediate: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-        Advanced: "bg-red-500/10 text-red-500 border-red-500/20"
-    }
-
     return (
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50">
+        <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <CardHeader>
                 <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline">{path.category}</Badge>
-                            <Badge className={difficultyColors[path.difficulty as keyof typeof difficultyColors]}>
-                                {path.difficulty}
-                            </Badge>
+                    <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="rounded-full bg-background/50 backdrop-blur-sm">{path.category}</Badge>
                             {path.trending && (
-                                <Badge variant="secondary" className="gap-1">
+                                <Badge variant="secondary" className="rounded-full gap-1 bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border-orange-500/20">
                                     <Flame className="h-3 w-3" />
                                     Trending
                                 </Badge>
                             )}
                         </div>
-                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                            <Link href={`/path/${path.id}`}>{path.title}</Link>
+                        <CardTitle className="text-xl font-semibold tracking-tight group-hover:text-primary transition-colors">
+                            <Link href={`/path/${path.id}`} className="after:absolute after:inset-0">{path.title}</Link>
                         </CardTitle>
                     </div>
                 </div>
-                <CardDescription className="line-clamp-2">{path.description}</CardDescription>
+                <CardDescription className="line-clamp-2 text-muted-foreground/80">{path.description}</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-6">
                     {path.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
+                        <Badge key={tag} variant="secondary" className="text-xs rounded-md bg-secondary/50 text-secondary-foreground/80">
                             {tag}
                         </Badge>
                     ))}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {path.duration}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            <span>{path.duration}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Users className="h-4 w-4" />
+                            <span>{path.students.toLocaleString()}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {path.students.toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        {path.rating}
+                    <div className="flex items-center gap-1 text-yellow-500">
+                        <Star className="h-4 w-4 fill-current" />
+                        <span className="text-foreground font-medium">{path.rating}</span>
                     </div>
                 </div>
             </CardContent>
-            <CardFooter className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={path.author.avatar} alt={path.author.name} />
-                        <AvatarFallback>{path.author.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-sm">
-                        <p className="font-medium">{path.author.name}</p>
+            <CardFooter className="border-t border-border/50 bg-muted/20 p-4">
+                <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6 border border-border">
+                            <AvatarImage src={path.author.avatar} alt={path.author.name} />
+                            <AvatarFallback className="text-xs">{path.author.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium text-muted-foreground">{path.author.name}</span>
+                    </div>
+                    <div className="text-xs font-medium text-primary flex items-center gap-1 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0">
+                        Start Path <ArrowRight className="h-3 w-3" />
                     </div>
                 </div>
-                <Button size="sm" asChild>
-                    <Link href={`/path/${path.id}`}>
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Start Learning
-                    </Link>
-                </Button>
             </CardFooter>
         </Card>
     )
@@ -171,52 +162,88 @@ function PathCard({ path }: { path: typeof paths[0] }) {
 
 export default function HomePage() {
     return (
-        <div className="space-y-8">
+        <div className="flex flex-col gap-8">
             {/* Hero Section */}
-            <div className="text-center space-y-4 py-12">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-                    Discover Your Learning Path
-                </h1>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                    Explore curated learning paths created by experts. Start your journey today.
-                </p>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-muted/50 to-background border border-border/50 p-8 md:p-12">
+                <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-black/10" />
+                <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
+                    <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary backdrop-blur-sm">
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        New Learning Paths Available
+                    </div>
+                    <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+                        Master Your Craft with <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Curated Paths</span>
+                    </h1>
+                    <p className="text-xl text-muted-foreground max-w-2xl">
+                        Structured learning journeys designed by industry experts. Stop guessing what to learn next and start building your future.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        <Button size="lg" className="h-12 px-8 rounded-full text-base">
+                            Explore Paths
+                        </Button>
+                        <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-base bg-background/50 backdrop-blur-sm">
+                            View Leaderboard
+                        </Button>
+                    </div>
+                </div>
             </div>
 
-            {/* Tabs for filtering */}
-            <Tabs defaultValue="all" className="w-full">
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-                    <TabsTrigger value="all">All Paths</TabsTrigger>
-                    <TabsTrigger value="trending">
-                        <TrendingUp className="h-4 w-4 mr-2" />
-                        Trending
-                    </TabsTrigger>
-                    <TabsTrigger value="new">New</TabsTrigger>
-                </TabsList>
+            {/* Main Content */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-semibold tracking-tight">Featured Paths</h2>
+                    <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+                        View All <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
 
-                <TabsContent value="all" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {paths.map((path) => (
-                            <PathCard key={path.id} path={path} />
-                        ))}
-                    </div>
-                </TabsContent>
+                <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
+                        <TabsTrigger
+                            value="all"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                        >
+                            All Paths
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="trending"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                        >
+                            Trending
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="new"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                        >
+                            Newest
+                        </TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="trending" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {paths.filter(p => p.trending).map((path) => (
-                            <PathCard key={path.id} path={path} />
-                        ))}
-                    </div>
-                </TabsContent>
+                    <TabsContent value="all" className="mt-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {paths.map((path) => (
+                                <PathCard key={path.id} path={path} />
+                            ))}
+                        </div>
+                    </TabsContent>
 
-                <TabsContent value="new" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {paths.slice(0, 3).map((path) => (
-                            <PathCard key={path.id} path={path} />
-                        ))}
-                    </div>
-                </TabsContent>
-            </Tabs>
+                    <TabsContent value="trending" className="mt-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {paths.filter(p => p.trending).map((path) => (
+                                <PathCard key={path.id} path={path} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="new" className="mt-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {paths.slice(0, 3).map((path) => (
+                                <PathCard key={path.id} path={path} />
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     )
 }
