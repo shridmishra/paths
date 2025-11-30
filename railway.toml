@@ -1,6 +1,6 @@
 [build]
-builder = "nixpacks"
-buildCommand = "echo 'Using nixpacks.toml for build configuration'"
+builder = "NIXPACKS"
+nixpacksConfigPath = "nixpacks.toml"
 
 [deploy]
 startCommand = "pnpm --filter=api start"
