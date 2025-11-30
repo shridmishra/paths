@@ -10,6 +10,7 @@ cmds = [
 [phases.build]
 cmds = [
     'pnpm --filter=@workspace/db db:generate',
+    'pnpm --filter=@workspace/db build',
     'pnpm --filter=api build'
 ]
 
