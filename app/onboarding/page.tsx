@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -104,7 +103,7 @@ export default function OnboardingPage() {
                             </div>
                             <CardTitle className="text-3xl">Welcome to Paths!</CardTitle>
                             <CardDescription className="text-base">
-                                Let's personalize your learning experience
+                                Let&apos;s personalize your learning experience
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -141,7 +140,7 @@ export default function OnboardingPage() {
                         <CardHeader>
                             <CardTitle className="text-2xl">What interests you?</CardTitle>
                             <CardDescription>
-                                Select all the topics you'd like to explore (choose at least one)
+                                Select all the topics you&apos;d like to explore (choose at least one)
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -155,8 +154,8 @@ export default function OnboardingPage() {
                                             key={interest.id}
                                             onClick={() => toggleInterest(interest.id)}
                                             className={`relative p-4 rounded-lg border-2 transition-all text-left ${isSelected
-                                                    ? 'border-primary bg-primary/5 shadow-md'
-                                                    : 'border-border hover:border-primary/50'
+                                                ? 'border-primary bg-primary/5 shadow-md'
+                                                : 'border-border hover:border-primary/50'
                                                 }`}
                                         >
                                             {isSelected && (
@@ -196,7 +195,7 @@ export default function OnboardingPage() {
                 {step === 3 && (
                     <Card className="border-2">
                         <CardHeader>
-                            <CardTitle className="text-2xl">What's your skill level?</CardTitle>
+                            <CardTitle className="text-2xl">What&apos;s your skill level?</CardTitle>
                             <CardDescription>
                                 This helps us recommend the right paths for you
                             </CardDescription>
@@ -207,8 +206,8 @@ export default function OnboardingPage() {
                                     key={level.id}
                                     onClick={() => setSelectedLevel(level.id)}
                                     className={`w-full p-4 rounded-lg border-2 transition-all text-left ${selectedLevel === level.id
-                                            ? 'border-primary bg-primary/5 shadow-md'
-                                            : 'border-border hover:border-primary/50'
+                                        ? 'border-primary bg-primary/5 shadow-md'
+                                        : 'border-border hover:border-primary/50'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between">
@@ -260,8 +259,8 @@ export default function OnboardingPage() {
                                         key={goal.id}
                                         onClick={() => toggleGoal(goal.id)}
                                         className={`w-full p-4 rounded-lg border-2 transition-all text-left ${isSelected
-                                                ? 'border-primary bg-primary/5 shadow-md'
-                                                : 'border-border hover:border-primary/50'
+                                            ? 'border-primary bg-primary/5 shadow-md'
+                                            : 'border-border hover:border-primary/50'
                                             }`}
                                     >
                                         <div className="flex items-start justify-between">

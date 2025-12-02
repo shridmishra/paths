@@ -36,7 +36,6 @@ export async function PUT(
        return NextResponse.json({ error: 'Validation Error', details: validation.error.issues }, { status: 400 });
     }
 
-    // @ts-ignore - body type mismatch with zod schema optionality, but safeParse handles it
     const path = await pathsService.updatePath(id, validation.data.body);
     return NextResponse.json(path);
   } catch (error) {

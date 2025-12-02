@@ -1,6 +1,6 @@
 import { usersRepository } from '../repositories/users.repository';
-import { NotFoundError, BadRequestError, ConflictError } from '../utils/errors.util';
-import type { User, Prisma } from '@/lib/db';
+import { NotFoundError, ConflictError } from '../utils/errors.util';
+import type { User } from '@/lib/db';
 
 export class UsersService {
   /**

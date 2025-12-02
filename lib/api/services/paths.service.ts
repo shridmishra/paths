@@ -1,6 +1,6 @@
 import { pathsRepository } from '../repositories/paths.repository';
 import { NotFoundError, BadRequestError } from '../utils/errors.util';
-import type { Path, Prisma } from '@/lib/db';
+import type { Path } from '@/lib/db';
 
 export class PathsService {
   /**

@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Inbox, Search, Settings, User, Compass, Trophy, Plus, Bell } from "lucide-react"
+import { Home, Search, Settings, User, Compass, Trophy, Plus, Bell } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import {
     BookOpen, Clock, Users, Star, CheckCircle2, Circle, Play,
-    MessageSquare, Share2, Bookmark, Award
+    MessageSquare, Share2, Bookmark
 } from "lucide-react"
 import Link from "next/link"
 
@@ -62,7 +62,7 @@ const pathData = {
 }
 
 export default async function PathViewPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params
+    await params
     const completedLessons = pathData.modules.reduce(
         (acc, module) => acc + module.lessons.filter(l => l.completed).length,
         0
@@ -209,7 +209,7 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div>
-                                <h3 className="font-semibold mb-2">What you'll learn</h3>
+                                <h3 className="font-semibold mb-2">What you&apos;ll learn</h3>
                                 <ul className="space-y-2">
                                     <li className="flex items-start gap-2">
                                         <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import {
     Plus, X, GripVertical, Save, Eye, ChevronDown, ChevronUp,
     FileText, Video, Link as LinkIcon, Code
@@ -61,7 +60,7 @@ export default function PathCreationPage() {
         setModules(modules.filter(m => m.id !== moduleId))
     }
 
-    const updateModule = (moduleId: string, field: keyof Module, value: any) => {
+    const updateModule = (moduleId: string, field: keyof Module, value: Module[keyof Module]) => {
         setModules(modules.map(m =>
             m.id === moduleId ? { ...m, [field]: value } : m
         ))
@@ -94,7 +93,7 @@ export default function PathCreationPage() {
         ))
     }
 
-    const updateLesson = (moduleId: string, lessonId: string, field: keyof Lesson, value: any) => {
+    const updateLesson = (moduleId: string, lessonId: string, field: keyof Lesson, value: Lesson[keyof Lesson]) => {
         setModules(modules.map(m =>
             m.id === moduleId
                 ? {
@@ -263,7 +262,7 @@ export default function PathCreationPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {modules.map((module, moduleIndex) => (
+                    {modules.map((module) => (
                         <Card key={module.id} className="border-2">
                             <CardHeader className="pb-3">
                                 <div className="flex items-start gap-3">

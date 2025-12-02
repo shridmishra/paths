@@ -174,7 +174,7 @@ export default function SettingsPage() {
                                 <div className="space-y-0.5">
                                     <p className="font-medium">Course Updates</p>
                                     <p className="text-sm text-muted-foreground">
-                                        Get notified when paths you're enrolled in are updated
+                                        Get notified when paths you&apos;re enrolled in are updated
                                     </p>
                                 </div>
                                 <Switch

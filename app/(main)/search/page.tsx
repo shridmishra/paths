@@ -89,7 +89,7 @@ export default function SearchPage() {
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search for paths, topics, or instructors..."
+                            placeholder="Try adjusting your search or filter to find what you&apos;re looking for..."
                             className="pl-10 h-12 text-lg"
                         />
                     </div>
@@ -106,7 +106,7 @@ export default function SearchPage() {
 
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Found <span className="font-semibold text-foreground">{searchResults.length}</span> results for "{searchQuery}"
+                        Found <span className="font-semibold text-foreground">{searchResults.length}</span> results for &quot;{searchQuery}&quot;
                     </p>
                     {activeFiltersCount > 0 && (
                         <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -138,8 +138,8 @@ export default function SearchPage() {
                                                 key={category}
                                                 onClick={() => setSelectedCategory(category)}
                                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedCategory === category
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-accent"
                                                     }`}
                                             >
                                                 {category}
@@ -159,8 +159,8 @@ export default function SearchPage() {
                                                 key={difficulty}
                                                 onClick={() => setSelectedDifficulty(difficulty)}
                                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedDifficulty === difficulty
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-accent"
                                                     }`}
                                             >
                                                 {difficulty}
@@ -180,8 +180,8 @@ export default function SearchPage() {
                                                 key={duration}
                                                 onClick={() => setSelectedDuration(duration)}
                                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedDuration === duration
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-accent"
                                                     }`}
                                             >
                                                 {duration}
@@ -201,8 +201,8 @@ export default function SearchPage() {
                                                 key={rating}
                                                 onClick={() => setMinRating(rating)}
                                                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${minRating === rating
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-accent"
                                                     }`}
                                             >
                                                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

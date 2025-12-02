@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
 import {
     MapPin, Link as LinkIcon, Calendar, Award, BookOpen,
     Users, Settings, Share2, Trophy, Flame, Target,

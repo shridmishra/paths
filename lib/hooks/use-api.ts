@@ -16,7 +16,6 @@ import type {
   CreateTopicRequest,
   CreateQuestionRequest,
   CreateProgressRequest,
-  UpdateProgressRequest,
 } from '@/lib/types';
 
 // Query Keys

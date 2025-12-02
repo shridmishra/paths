@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BookOpen, Clock, Users, Star, TrendingUp, Flame, ArrowRight, Sparkles } from "lucide-react"
+import { Clock, Users, Star, Flame, ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 // Mock data for paths

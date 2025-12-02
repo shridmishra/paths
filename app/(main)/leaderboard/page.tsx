@@ -258,7 +258,7 @@ export default function LeaderboardPage() {
                 <TabsContent value="monthly" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>This Month's Leaders</CardTitle>
+                            <CardTitle>This Month&apos;s Leaders</CardTitle>
                             <CardDescription>
                                 Top performers this month
                             </CardDescription>
@@ -274,7 +274,7 @@ export default function LeaderboardPage() {
                 <TabsContent value="weekly" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>This Week's Leaders</CardTitle>
+                            <CardTitle>This Week&apos;s Leaders</CardTitle>
                             <CardDescription>
                                 Top performers this week
                             </CardDescription>

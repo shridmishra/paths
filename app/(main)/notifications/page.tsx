@@ -217,7 +217,7 @@ export default function NotificationsPage() {
                         <Card>
                             <CardContent className="p-12 text-center">
                                 <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                                <p className="text-lg font-medium mb-2">You're all caught up!</p>
+                                <p className="text-lg font-medium mb-2">You&apos;re all caught up!</p>
                                 <p className="text-muted-foreground">No unread notifications</p>
                             </CardContent>
                         </Card>
