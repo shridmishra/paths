@@ -5,96 +5,42 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Clock, Users, Star, Flame, ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
+import { db } from "@/lib/db"
+import { paths as pathsSchema, users as usersSchema } from "@/lib/db/schema"
+import { eq, desc } from "drizzle-orm"
 
-// Mock data for paths
-const paths = [
-    {
-        id: 1,
-        title: "Master React & Next.js",
-        description: "Learn modern React development with Next.js, from basics to advanced patterns",
-        author: { name: "Sarah Chen", avatar: "/avatars/sarah.jpg", username: "sarahchen" },
-        category: "Web Development",
-        difficulty: "Intermediate",
-        duration: "8 weeks",
-        students: 1234,
-        rating: 4.8,
-        progress: 0,
-        tags: ["React", "Next.js", "TypeScript"],
-        trending: true
-    },
-    {
-        id: 2,
-        title: "Python for Data Science",
-        description: "Complete guide to data analysis and machine learning with Python",
-        author: { name: "Alex Kumar", avatar: "/avatars/alex.jpg", username: "alexk" },
-        category: "Data Science",
-        difficulty: "Beginner",
-        duration: "10 weeks",
-        students: 2156,
-        rating: 4.9,
-        progress: 0,
-        tags: ["Python", "Pandas", "ML"],
-        trending: true
-    },
-    {
-        id: 3,
-        title: "System Design Fundamentals",
-        description: "Learn to design scalable systems and ace your technical interviews",
-        author: { name: "Mike Johnson", avatar: "/avatars/mike.jpg", username: "mikej" },
-        category: "System Design",
-        difficulty: "Advanced",
-        duration: "6 weeks",
-        students: 892,
-        rating: 4.7,
-        progress: 0,
-        tags: ["Architecture", "Scalability", "Interviews"],
-        trending: false
-    },
-    {
-        id: 4,
-        title: "Mobile App Development with Flutter",
-        description: "Build beautiful cross-platform mobile apps with Flutter and Dart",
-        author: { name: "Emma Wilson", avatar: "/avatars/emma.jpg", username: "emmaw" },
-        category: "Mobile Development",
-        difficulty: "Intermediate",
-        duration: "12 weeks",
-        students: 1567,
-        rating: 4.6,
-        progress: 0,
-        tags: ["Flutter", "Dart", "Mobile"],
-        trending: true
-    },
-    {
-        id: 5,
-        title: "DevOps & Cloud Engineering",
-        description: "Master AWS, Docker, Kubernetes and modern DevOps practices",
-        author: { name: "David Lee", avatar: "/avatars/david.jpg", username: "davidl" },
-        category: "DevOps",
-        difficulty: "Advanced",
-        duration: "14 weeks",
-        students: 743,
-        rating: 4.8,
-        progress: 0,
-        tags: ["AWS", "Docker", "Kubernetes"],
-        trending: false
-    },
-    {
-        id: 6,
-        title: "UI/UX Design Mastery",
-        description: "Create stunning user interfaces and delightful user experiences",
-        author: { name: "Lisa Park", avatar: "/avatars/lisa.jpg", username: "lisap" },
-        category: "Design",
-        difficulty: "Beginner",
-        duration: "8 weeks",
-        students: 1923,
-        rating: 4.9,
-        progress: 0,
-        tags: ["Figma", "Design", "UX"],
-        trending: true
-    }
-]
+async function getPaths() {
+    const paths = await db.select({
+        id: pathsSchema.id,
+        title: pathsSchema.title,
+        description: pathsSchema.description,
+        category: pathsSchema.category,
+        difficulty: pathsSchema.difficulty,
+        authorName: usersSchema.name,
+        authorEmail: usersSchema.email,
+        createdAt: pathsSchema.createdAt,
+    })
+        .from(pathsSchema)
+        .leftJoin(usersSchema, eq(pathsSchema.userId, usersSchema.id))
+        .orderBy(desc(pathsSchema.createdAt));
 
-function PathCard({ path }: { path: typeof paths[0] }) {
+    return paths.map(path => ({
+        ...path,
+        duration: "8 weeks", // Placeholder
+        students: 0, // Placeholder
+        rating: 5.0, // Placeholder
+        progress: 0,
+        tags: [path.category], // Placeholder
+        trending: false, // Placeholder
+        author: {
+            name: path.authorName || "Unknown",
+            avatar: "", // Placeholder
+            username: path.authorEmail?.split('@')[0] || "unknown"
+        }
+    }));
+}
+
+function PathCard({ path }: { path: any }) {
     return (
         <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
@@ -119,7 +65,7 @@ function PathCard({ path }: { path: typeof paths[0] }) {
             </CardHeader>
             <CardContent>
                 <div className="flex flex-wrap gap-2 mb-6">
-                    {path.tags.map((tag) => (
+                    {path.tags.map((tag: string) => (
                         <Badge key={tag} variant="secondary" className="text-xs rounded-md bg-secondary/50 text-secondary-foreground/80">
                             {tag}
                         </Badge>
@@ -147,7 +93,7 @@ function PathCard({ path }: { path: typeof paths[0] }) {
                     <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6 border border-border">
                             <AvatarImage src={path.author.avatar} alt={path.author.name} />
-                            <AvatarFallback className="text-xs">{path.author.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            <AvatarFallback className="text-xs">{path.author.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <span className="text-xs font-medium text-muted-foreground">{path.author.name}</span>
                     </div>
@@ -160,7 +106,9 @@ function PathCard({ path }: { path: typeof paths[0] }) {
     )
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+    const paths = await getPaths();
+
     return (
         <div className="flex flex-col gap-8">
             {/* Hero Section */}

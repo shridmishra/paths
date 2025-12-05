@@ -8,6 +8,13 @@
       "when": 1764930743201,
       "tag": "0000_aromatic_blink",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764932179645,
+      "tag": "0001_steep_stryfe",
+      "breakpoints": true
     }
   ]
 }

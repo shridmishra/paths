@@ -1,24 +1,50 @@
 
-import { db } from './index';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
 import { users, paths, topics, questions, progress } from './schema';
 import { eq } from 'drizzle-orm';
+import { hash } from 'bcryptjs';
+import 'dotenv/config';
+
+const connectionString = process.env.DATABASE_URL!;
+const client = postgres(connectionString, { prepare: false });
+const db = drizzle(client, { schema });
 
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Create a demo user
+  const adminEmail = 'paths@admin.com';
+  const adminPassword = 'paths#admin';
+  const adminName = 'Paths';
+
+  // Create or update super admin
   let user = await db.query.users.findFirst({
-    where: eq(users.email, 'demo@paths.dev'),
+    where: eq(users.email, adminEmail),
   });
+
+  const hashedPassword = await hash(adminPassword, 10);
 
   if (!user) {
     [user] = await db.insert(users).values({
-      email: 'demo@paths.dev',
-      name: 'Demo User',
+      email: adminEmail,
+      name: adminName,
+      password: hashedPassword,
+      role: 'admin',
     }).returning();
+    console.log('✅ Created super admin:', user.email);
+  } else {
+    // Update existing admin to ensure password/role are correct
+    [user] = await db.update(users)
+      .set({ 
+        password: hashedPassword,
+        role: 'admin',
+        name: adminName
+      })
+      .where(eq(users.email, adminEmail))
+      .returning();
+    console.log('✅ Updated super admin:', user.email);
   }
-
-  console.log('✅ Created demo user:', user!.email);
 
   // Create learning paths
   const pathsData = [
@@ -130,15 +156,6 @@ async function main() {
     },
   ];
 
-  // We can't easily skip duplicates with random IDs unless we check content.
-  // But for seeding, we might just want to insert if empty or just ignore.
-  // Since we don't have stable IDs for questions in the data above (except implicitly),
-  // I'll just insert them. If run multiple times, it might duplicate questions.
-  // To avoid this, I should check if questions exist for the topic.
-  
-  // For simplicity, I'll delete existing questions for these topics and re-insert?
-  // Or just check count.
-  
   for (const q of questionsData) {
     const existing = await db.query.questions.findFirst({
       where: (questions, { eq, and }) => and(eq(questions.question, q.question), eq(questions.topicId, q.topicId)),
@@ -151,20 +168,8 @@ async function main() {
 
   console.log('✅ Created questions');
 
-  // Create sample progress
-  const someQuestions = await db.query.questions.findMany({ limit: 2 });
-
-  for (const q of someQuestions) {
-    await db.insert(progress).values({
-      userId: user!.id,
-      questionId: q.id,
-      completed: true,
-      score: 90,
-      completedAt: new Date(),
-    }).onConflictDoNothing().execute();
-  }
-
-  console.log('✅ Created sample progress');
+  // Removed static progress generation as requested
+  
   console.log('🎉 Database seeding completed!');
   process.exit(0);
 }
