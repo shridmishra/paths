@@ -6,90 +6,88 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
     MapPin, Link as LinkIcon, Calendar, Award, BookOpen,
     Users, Settings, Share2, Trophy, Flame, Target,
-    Clock, Star, CheckCircle2
+    Clock, Star, CheckCircle2, Zap, Sparkles
 } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { db } from "@/lib/db"
+import { paths, topics, questions, users, progress, lessons } from "@/lib/db/schema"
+import { eq, and, sql, desc } from "drizzle-orm"
 
-// Mock user data
-const userData = {
-    name: "John Doe",
-    username: "johndoe",
-    avatar: "/avatars/user.jpg",
-    bio: "Passionate learner and developer. Love building things with React and Next.js.",
-    location: "San Francisco, CA",
-    website: "https://johndoe.dev",
-    joinedDate: "January 2024",
-    stats: {
-        pathsCompleted: 12,
-        pathsCreated: 3,
-        followers: 245,
-        following: 189,
-        totalPoints: 7890,
-        currentStreak: 15,
-        longestStreak: 28,
-        badges: 8
-    }
+async function getUserProfile(userId: string) {
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, userId)
+    });
+    return user;
 }
 
-const myPaths = [
-    {
-        id: 1,
-        title: "Master React & Next.js",
-        progress: 75,
-        totalLessons: 40,
-        completedLessons: 30,
-        lastAccessed: "2 hours ago",
-        category: "Web Development"
-    },
-    {
-        id: 2,
-        title: "Python for Data Science",
-        progress: 45,
-        totalLessons: 50,
-        completedLessons: 22,
-        lastAccessed: "1 day ago",
-        category: "Data Science"
-    },
-    {
-        id: 3,
-        title: "UI/UX Design Fundamentals",
-        progress: 100,
-        totalLessons: 25,
-        completedLessons: 25,
-        lastAccessed: "3 days ago",
-        category: "Design"
+async function getUserStats(userId: string) {
+    // Get all progress for user
+    const userProgress = await db.select({
+        lessonId: progress.lessonId
+    })
+        .from(progress)
+        .where(and(eq(progress.userId, userId), eq(progress.completed, true)));
+
+    const totalPoints = userProgress.length * 10; // 10 points per lesson
+
+    // Get paths progress
+    const rows = await db.select({
+        pathId: paths.id,
+        pathTitle: paths.title,
+        pathCategory: paths.category,
+        totalLessons: sql<number>`count(distinct ${lessons.id})`,
+        completedLessons: sql<number>`count(distinct case when ${progress.completed} then ${progress.lessonId} end)`
+    })
+        .from(paths)
+        .innerJoin(topics, eq(topics.pathId, paths.id))
+        .innerJoin(lessons, eq(lessons.topicId, topics.id))
+        .leftJoin(progress, and(eq(progress.lessonId, lessons.id), eq(progress.userId, userId)))
+        .groupBy(paths.id, paths.title, paths.category);
+
+    // Filter paths where user has at least some progress
+    const myPaths = rows.filter(r => Number(r.completedLessons) > 0).map(r => ({
+        id: r.pathId,
+        title: r.pathTitle,
+        category: r.pathCategory,
+        totalLessons: Number(r.totalLessons),
+        completedLessons: Number(r.completedLessons),
+        progress: Math.round((Number(r.completedLessons) / Number(r.totalLessons)) * 100),
+        lastAccessed: "Recently" // Placeholder
+    }));
+
+    const pathsCompleted = myPaths.filter(p => p.progress === 100).length;
+
+    return {
+        totalPoints,
+        pathsCompleted,
+        myPaths
+    };
+}
+
+async function getCreatedPaths(userId: string) {
+    const created = await db.query.paths.findMany({
+        where: eq(paths.userId, userId),
+        orderBy: [desc(paths.createdAt)]
+    });
+    return created;
+}
+
+export default async function ProfilePage() {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+        redirect("/login");
     }
-]
 
-const createdPaths = [
-    {
-        id: 1,
-        title: "Introduction to TypeScript",
-        students: 156,
-        rating: 4.7,
-        totalRatings: 42,
-        published: "2 months ago"
-    },
-    {
-        id: 2,
-        title: "React Testing Best Practices",
-        students: 89,
-        rating: 4.8,
-        totalRatings: 23,
-        published: "1 month ago"
-    }
-]
+    const user = await getUserProfile(session.user.id);
+    if (!user) redirect("/login");
 
-const badges = [
-    { id: 1, name: "Fast Learner", description: "Complete 5 lessons in one day", icon: "⚡" },
-    { id: 2, name: "Streak Master", description: "Maintain a 7-day streak", icon: "🔥" },
-    { id: 3, name: "Path Creator", description: "Create your first path", icon: "✨" },
-    { id: 4, name: "Community Helper", description: "Help 10 other learners", icon: "🤝" },
-    { id: 5, name: "Top Contributor", description: "Earn 5000 points", icon: "🏆" },
-    { id: 6, name: "Completionist", description: "Complete 10 paths", icon: "✅" }
-]
+    const { totalPoints, pathsCompleted, myPaths } = await getUserStats(user.id);
+    const createdPaths = await getCreatedPaths(user.id);
 
-export default function ProfilePage() {
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             {/* Profile Header */}
@@ -97,23 +95,23 @@ export default function ProfilePage() {
                 <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row gap-6">
                         <Avatar className="h-32 w-32 ring-4 ring-background shadow-xl">
-                            <AvatarImage src={userData.avatar} alt={userData.name} />
-                            <AvatarFallback className="text-3xl">{userData.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            <AvatarImage src="" alt={user.name || ""} />
+                            <AvatarFallback className="text-3xl">{user.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 space-y-4">
                             <div>
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h1 className="text-3xl font-bold">{userData.name}</h1>
-                                        <p className="text-muted-foreground">@{userData.username}</p>
+                                        <h1 className="text-3xl font-bold">{user.name}</h1>
+                                        <p className="text-muted-foreground">@{user.email.split('@')[0]}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" className="cursor-pointer">
                                             <Share2 className="h-4 w-4 mr-2" />
                                             Share
                                         </Button>
-                                        <Button size="sm" asChild>
+                                        <Button size="sm" asChild className="cursor-pointer">
                                             <Link href="/settings">
                                                 <Settings className="h-4 w-4 mr-2" />
                                                 Edit Profile
@@ -121,40 +119,23 @@ export default function ProfilePage() {
                                         </Button>
                                     </div>
                                 </div>
-                                <p className="mt-3 text-muted-foreground">{userData.bio}</p>
+                                <p className="mt-3 text-muted-foreground">No bio yet.</p>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                {userData.location && (
-                                    <div className="flex items-center gap-1">
-                                        <MapPin className="h-4 w-4" />
-                                        {userData.location}
-                                    </div>
-                                )}
-                                {userData.website && (
-                                    <a
-                                        href={userData.website}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 hover:text-primary transition-colors"
-                                    >
-                                        <LinkIcon className="h-4 w-4" />
-                                        {userData.website.replace('https://', '')}
-                                    </a>
-                                )}
                                 <div className="flex items-center gap-1">
                                     <Calendar className="h-4 w-4" />
-                                    Joined {userData.joinedDate}
+                                    Joined {user.createdAt.toLocaleDateString()}
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-6 text-sm">
                                 <div>
-                                    <span className="font-bold text-lg">{userData.stats.followers}</span>
+                                    <span className="font-bold text-lg">0</span>
                                     <span className="text-muted-foreground ml-1">Followers</span>
                                 </div>
                                 <div>
-                                    <span className="font-bold text-lg">{userData.stats.following}</span>
+                                    <span className="font-bold text-lg">0</span>
                                     <span className="text-muted-foreground ml-1">Following</span>
                                 </div>
                             </div>
@@ -173,7 +154,7 @@ export default function ProfilePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{userData.stats.totalPoints.toLocaleString()}</div>
+                        <div className="text-3xl font-bold">{totalPoints.toLocaleString()}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -184,7 +165,7 @@ export default function ProfilePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{userData.stats.currentStreak} days</div>
+                        <div className="text-3xl font-bold">0 days</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -195,7 +176,7 @@ export default function ProfilePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{userData.stats.pathsCompleted}</div>
+                        <div className="text-3xl font-bold">{pathsCompleted}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -206,7 +187,7 @@ export default function ProfilePage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold">{userData.stats.badges}</div>
+                        <div className="text-3xl font-bold">0</div>
                     </CardContent>
                 </Card>
             </div>
@@ -214,15 +195,15 @@ export default function ProfilePage() {
             {/* Tabs */}
             <Tabs defaultValue="learning" className="w-full">
                 <TabsList>
-                    <TabsTrigger value="learning">
+                    <TabsTrigger value="learning" className="cursor-pointer">
                         <BookOpen className="h-4 w-4 mr-2" />
                         My Paths
                     </TabsTrigger>
-                    <TabsTrigger value="created">
+                    <TabsTrigger value="created" className="cursor-pointer">
                         <Target className="h-4 w-4 mr-2" />
                         Created Paths
                     </TabsTrigger>
-                    <TabsTrigger value="badges">
+                    <TabsTrigger value="badges" className="cursor-pointer">
                         <Award className="h-4 w-4 mr-2" />
                         Badges
                     </TabsTrigger>
@@ -230,6 +211,11 @@ export default function ProfilePage() {
 
                 {/* My Paths Tab */}
                 <TabsContent value="learning" className="mt-6 space-y-4">
+                    {myPaths.length === 0 && (
+                        <div className="text-center py-10 text-muted-foreground">
+                            You haven't started any paths yet.
+                        </div>
+                    )}
                     {myPaths.map((path) => (
                         <Card key={path.id} className="hover:shadow-lg transition-all">
                             <CardHeader>
@@ -272,7 +258,7 @@ export default function ProfilePage() {
                                         <Clock className="h-4 w-4" />
                                         Last accessed {path.lastAccessed}
                                     </div>
-                                    <Button size="sm" asChild>
+                                    <Button size="sm" asChild className="cursor-pointer">
                                         <Link href={`/path/${path.id}`}>
                                             {path.progress === 100 ? "Review" : "Continue"}
                                         </Link>
@@ -293,25 +279,25 @@ export default function ProfilePage() {
                                         {path.title}
                                     </Link>
                                 </CardTitle>
-                                <CardDescription>Published {path.published}</CardDescription>
+                                <CardDescription>Published {path.createdAt.toLocaleDateString()}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-6 text-sm">
                                         <div className="flex items-center gap-1">
                                             <Users className="h-4 w-4 text-muted-foreground" />
-                                            <span>{path.students} students</span>
+                                            <span>0 students</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                            <span>{path.rating} ({path.totalRatings} ratings)</span>
+                                            <span>5.0 (0 ratings)</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm" asChild>
+                                        <Button variant="outline" size="sm" asChild className="cursor-pointer">
                                             <Link href={`/path/${path.id}/edit`}>Edit</Link>
                                         </Button>
-                                        <Button size="sm" asChild>
+                                        <Button size="sm" asChild className="cursor-pointer">
                                             <Link href={`/path/${path.id}`}>View</Link>
                                         </Button>
                                     </div>
@@ -319,27 +305,15 @@ export default function ProfilePage() {
                             </CardContent>
                         </Card>
                     ))}
-                    <Button variant="outline" className="w-full" asChild>
+                    <Button variant="outline" className="w-full cursor-pointer" asChild>
                         <Link href="/create">Create New Path</Link>
                     </Button>
                 </TabsContent>
 
                 {/* Badges Tab */}
                 <TabsContent value="badges" className="mt-6">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {badges.map((badge) => (
-                            <Card key={badge.id} className="hover:shadow-lg transition-all">
-                                <CardHeader>
-                                    <div className="flex items-start gap-3">
-                                        <div className="text-4xl">{badge.icon}</div>
-                                        <div className="flex-1">
-                                            <CardTitle className="text-lg">{badge.name}</CardTitle>
-                                            <CardDescription className="mt-1">{badge.description}</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                            </Card>
-                        ))}
+                    <div className="text-center py-10 text-muted-foreground">
+                        Badges coming soon...
                     </div>
                 </TabsContent>
             </Tabs>

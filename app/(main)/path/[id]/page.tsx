@@ -9,65 +9,100 @@ import {
     MessageSquare, Share2, Bookmark
 } from "lucide-react"
 import Link from "next/link"
+import { notFound } from "next/navigation"
+import { db } from "@/lib/db"
+import { paths, topics, lessons, users, progress } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { ShareButton } from "@/components/ShareButton"
 
-// Mock data
-const pathData = {
-    id: 1,
-    title: "Master React & Next.js",
-    description: "Learn modern React development with Next.js, from basics to advanced patterns. This comprehensive path covers everything you need to become a proficient React developer.",
-    author: {
-        name: "Sarah Chen",
-        avatar: "/avatars/sarah.jpg",
-        username: "sarahchen",
-        bio: "Senior Frontend Engineer at Tech Corp. 10+ years of experience."
-    },
-    category: "Web Development",
-    difficulty: "Intermediate",
-    duration: "8 weeks",
-    students: 1234,
-    rating: 4.8,
-    totalRatings: 456,
-    progress: 35,
-    tags: ["React", "Next.js", "TypeScript"],
-    modules: [
-        {
-            id: 1,
-            title: "Introduction to React",
-            lessons: [
-                { id: 1, title: "What is React?", duration: "15 min", completed: true },
-                { id: 2, title: "Setting up your environment", duration: "20 min", completed: true },
-                { id: 3, title: "Your first component", duration: "25 min", completed: true },
-                { id: 4, title: "Props and State", duration: "30 min", completed: false }
-            ]
-        },
-        {
-            id: 2,
-            title: "React Hooks Deep Dive",
-            lessons: [
-                { id: 5, title: "useState and useEffect", duration: "35 min", completed: false },
-                { id: 6, title: "useContext and useReducer", duration: "40 min", completed: false },
-                { id: 7, title: "Custom Hooks", duration: "30 min", completed: false }
-            ]
-        },
-        {
-            id: 3,
-            title: "Next.js Fundamentals",
-            lessons: [
-                { id: 8, title: "Pages and Routing", duration: "25 min", completed: false },
-                { id: 9, title: "Server Components", duration: "35 min", completed: false },
-                { id: 10, title: "Data Fetching", duration: "40 min", completed: false }
-            ]
+async function getPath(id: string) {
+    const path = await db.query.paths.findFirst({
+        where: eq(paths.id, id),
+        with: {
+            user: true,
+            topics: {
+                with: {
+                    lessons: {
+                        orderBy: (lessons, { asc }) => [asc(lessons.order)]
+                    }
+                },
+                orderBy: (topics, { asc }) => [asc(topics.order)]
+            }
         }
-    ]
+    });
+    return path;
+}
+
+async function getUserProgress(userId: string | undefined, pathId: string) {
+    if (!userId) return { completedLessonIds: new Set<string>() };
+
+    const userProgress = await db.select({
+        lessonId: progress.lessonId,
+        completed: progress.completed
+    })
+        .from(progress)
+        .innerJoin(lessons, eq(progress.lessonId, lessons.id))
+        .innerJoin(topics, eq(lessons.topicId, topics.id))
+        .where(and(
+            eq(progress.userId, userId),
+            eq(topics.pathId, pathId),
+            eq(progress.completed, true)
+        ));
+
+    return {
+        completedLessonIds: new Set(userProgress.map(p => p.lessonId).filter(Boolean) as string[])
+    };
 }
 
 export default async function PathViewPage({ params }: { params: Promise<{ id: string }> }) {
-    await params
-    const completedLessons = pathData.modules.reduce(
+    const { id } = await params;
+    const session = await getServerSession(authOptions);
+
+    const path = await getPath(id);
+
+    if (!path) {
+        notFound();
+    }
+
+    const { completedLessonIds } = await getUserProgress(session?.user?.id, id);
+
+    // Map DB data to UI structure
+    const modules = path.topics.map(topic => ({
+        id: topic.id,
+        title: topic.title,
+        lessons: topic.lessons.map(l => ({
+            id: l.id,
+            title: l.title,
+            duration: l.duration || "15 min",
+            completed: completedLessonIds.has(l.id)
+        }))
+    }));
+
+    const totalLessons = modules.reduce((acc, module) => acc + module.lessons.length, 0);
+    const completedLessons = modules.reduce(
         (acc, module) => acc + module.lessons.filter(l => l.completed).length,
         0
-    )
-    const totalLessons = pathData.modules.reduce((acc, module) => acc + module.lessons.length, 0)
+    );
+    const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+    // Find first incomplete lesson
+    let firstIncompleteLessonId = null;
+    for (const module of modules) {
+        for (const lesson of module.lessons) {
+            if (!lesson.completed) {
+                firstIncompleteLessonId = lesson.id;
+                break;
+            }
+        }
+        if (firstIncompleteLessonId) break;
+    }
+
+    // If all completed, link to the first lesson of the first module (review)
+    if (!firstIncompleteLessonId && modules.length > 0 && modules[0].lessons.length > 0) {
+        firstIncompleteLessonId = modules[0].lessons[0].id;
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
@@ -76,16 +111,15 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-4">
                         <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="outline">{pathData.category}</Badge>
-                            <Badge variant="secondary">{pathData.difficulty}</Badge>
-                            {pathData.tags.map((tag) => (
-                                <Badge key={tag} variant="outline" className="text-xs">
-                                    {tag}
-                                </Badge>
-                            ))}
+                            <Badge variant="outline">{path.category}</Badge>
+                            <Badge variant="secondary">{path.difficulty}</Badge>
+                            {/* Tags placeholder */}
+                            <Badge variant="outline" className="text-xs">
+                                {path.category}
+                            </Badge>
                         </div>
-                        <h1 className="text-4xl font-bold tracking-tight">{pathData.title}</h1>
-                        <p className="text-lg text-muted-foreground">{pathData.description}</p>
+                        <h1 className="text-4xl font-bold tracking-tight">{path.title}</h1>
+                        <p className="text-lg text-muted-foreground">{path.description}</p>
                     </div>
                 </div>
 
@@ -93,15 +127,15 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                 <div className="flex flex-wrap items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{pathData.duration}</span>
+                        <span>8 weeks</span> {/* Placeholder */}
                     </div>
                     <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{pathData.students.toLocaleString()} students</span>
+                        <span>0 students</span> {/* Placeholder */}
                     </div>
                     <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{pathData.rating} ({pathData.totalRatings} ratings)</span>
+                        <span>5.0 (0 ratings)</span> {/* Placeholder */}
                     </div>
                     <div className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -110,39 +144,40 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Progress */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">Your Progress</span>
-                                <span className="text-muted-foreground">
-                                    {completedLessons} of {totalLessons} lessons completed
-                                </span>
+                {session?.user && (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">Your Progress</span>
+                                    <span className="text-muted-foreground">
+                                        {completedLessons} of {totalLessons} lessons completed
+                                    </span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-primary transition-all duration-300"
+                                        style={{ width: `${progressPercentage}%` }}
+                                    />
+                                </div>
                             </div>
-                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-primary transition-all duration-300"
-                                    style={{ width: `${(completedLessons / totalLessons) * 100}%` }}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap items-center gap-3">
-                    <Button size="lg" className="gap-2">
-                        <Play className="h-4 w-4" />
-                        Continue Learning
+                    <Button size="lg" className="gap-2 cursor-pointer" asChild>
+                        <Link href={firstIncompleteLessonId ? `/path/${id}/lesson/${firstIncompleteLessonId}` : "#"}>
+                            <Play className="h-4 w-4" />
+                            {progressPercentage > 0 ? "Continue Learning" : "Start Path"}
+                        </Link>
                     </Button>
-                    <Button variant="outline" size="lg" className="gap-2">
+                    <Button variant="outline" size="lg" className="gap-2 cursor-pointer">
                         <Bookmark className="h-4 w-4" />
                         Save
                     </Button>
-                    <Button variant="outline" size="lg" className="gap-2">
-                        <Share2 className="h-4 w-4" />
-                        Share
-                    </Button>
+                    <ShareButton />
                 </div>
             </div>
 
@@ -151,17 +186,17 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
             {/* Tabs */}
             <Tabs defaultValue="curriculum" className="w-full">
                 <TabsList>
-                    <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                    <TabsTrigger value="about">About</TabsTrigger>
-                    <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                    <TabsTrigger value="discussion">
+                    <TabsTrigger value="curriculum" className="cursor-pointer">Curriculum</TabsTrigger>
+                    <TabsTrigger value="about" className="cursor-pointer">About</TabsTrigger>
+                    <TabsTrigger value="reviews" className="cursor-pointer">Reviews</TabsTrigger>
+                    <TabsTrigger value="discussion" className="cursor-pointer">
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Discussion
                     </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="curriculum" className="mt-6 space-y-4">
-                    {pathData.modules.map((module, idx) => (
+                    {modules.map((module, idx) => (
                         <Card key={module.id}>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-3">
@@ -191,7 +226,7 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                                                     <p className="text-sm text-muted-foreground">{lesson.duration}</p>
                                                 </div>
                                             </div>
-                                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                                                 <Play className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -209,25 +244,8 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div>
-                                <h3 className="font-semibold mb-2">What you&apos;ll learn</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                                        <span>Build modern React applications with hooks and functional components</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                                        <span>Master Next.js for server-side rendering and static site generation</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                                        <span>Implement TypeScript for type-safe React development</span>
-                                    </li>
-                                    <li className="flex items-start gap-2">
-                                        <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                                        <span>Deploy production-ready applications</span>
-                                    </li>
-                                </ul>
+                                <h3 className="font-semibold mb-2">Description</h3>
+                                <p className="text-muted-foreground">{path.description}</p>
                             </div>
 
                             <Separator />
@@ -236,15 +254,14 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                                 <h3 className="font-semibold mb-4">Instructor</h3>
                                 <div className="flex items-start gap-4">
                                     <Avatar className="h-16 w-16">
-                                        <AvatarImage src={pathData.author.avatar} alt={pathData.author.name} />
-                                        <AvatarFallback>{pathData.author.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        <AvatarImage src="" alt={path.user.name || ""} />
+                                        <AvatarFallback>{path.user.name?.split(' ').map(n => n[0]).join('') || '?'}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
-                                        <h4 className="font-semibold text-lg">{pathData.author.name}</h4>
-                                        <p className="text-sm text-muted-foreground mb-2">@{pathData.author.username}</p>
-                                        <p className="text-sm">{pathData.author.bio}</p>
-                                        <Button variant="outline" size="sm" className="mt-3" asChild>
-                                            <Link href={`/profile/${pathData.author.username}`}>View Profile</Link>
+                                        <h4 className="font-semibold text-lg">{path.user.name}</h4>
+                                        <p className="text-sm text-muted-foreground mb-2">@{path.user.email.split('@')[0]}</p>
+                                        <Button variant="outline" size="sm" className="mt-3 cursor-pointer" asChild>
+                                            <Link href={`/profile/${path.user.email.split('@')[0]}`}>View Profile</Link>
                                         </Button>
                                     </div>
                                 </div>
@@ -272,8 +289,8 @@ export default async function PathViewPage({ params }: { params: Promise<{ id: s
                             <CardDescription>Ask questions and share insights with other learners</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button asChild>
-                                <Link href={`/path/${pathData.id}/discussion`}>View Discussions</Link>
+                            <Button asChild className="cursor-pointer">
+                                <Link href={`/path/${path.id}/discussion`}>View Discussions</Link>
                             </Button>
                         </CardContent>
                     </Card>

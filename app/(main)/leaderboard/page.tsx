@@ -4,82 +4,39 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Medal, Award, TrendingUp, Flame, Crown } from "lucide-react"
 import Link from "next/link"
+import { db } from "@/lib/db"
+import { users, progress } from "@/lib/db/schema"
+import { eq, and, sql, desc } from "drizzle-orm"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 
-// Mock leaderboard data
-const leaderboardData = [
-    {
-        rank: 1,
-        user: { name: "Alex Rivera", username: "alexr", avatar: "/avatars/alex.jpg" },
-        points: 15420,
-        pathsCompleted: 24,
-        streak: 45,
-        badges: 12,
-        change: 0
-    },
-    {
-        rank: 2,
-        user: { name: "Sarah Chen", username: "sarahchen", avatar: "/avatars/sarah.jpg" },
-        points: 14890,
-        pathsCompleted: 22,
-        streak: 38,
-        badges: 10,
-        change: 1
-    },
-    {
-        rank: 3,
-        user: { name: "Mike Johnson", username: "mikej", avatar: "/avatars/mike.jpg" },
-        points: 13560,
-        pathsCompleted: 20,
-        streak: 42,
-        badges: 11,
-        change: -1
-    },
-    {
-        rank: 4,
-        user: { name: "Emma Wilson", username: "emmaw", avatar: "/avatars/emma.jpg" },
-        points: 12340,
-        pathsCompleted: 18,
-        streak: 30,
-        badges: 9,
-        change: 2
-    },
-    {
-        rank: 5,
-        user: { name: "David Lee", username: "davidl", avatar: "/avatars/david.jpg" },
-        points: 11890,
-        pathsCompleted: 17,
-        streak: 28,
-        badges: 8,
-        change: 0
-    },
-    {
-        rank: 6,
-        user: { name: "Lisa Park", username: "lisap", avatar: "/avatars/lisa.jpg" },
-        points: 10560,
-        pathsCompleted: 15,
-        streak: 25,
-        badges: 7,
-        change: -2
-    },
-    {
-        rank: 7,
-        user: { name: "James Brown", username: "jamesb", avatar: "/avatars/james.jpg" },
-        points: 9870,
-        pathsCompleted: 14,
-        streak: 22,
-        badges: 6,
-        change: 1
-    },
-    {
-        rank: 8,
-        user: { name: "Maria Garcia", username: "mariag", avatar: "/avatars/maria.jpg" },
-        points: 9120,
-        pathsCompleted: 13,
-        streak: 20,
-        badges: 6,
-        change: 0
-    }
-]
+async function getLeaderboard() {
+    const leaderboard = await db.select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        points: sql<number>`count(${progress.id}) * 10`
+    })
+        .from(users)
+        .leftJoin(progress, and(eq(progress.userId, users.id), eq(progress.completed, true)))
+        .groupBy(users.id, users.name, users.email)
+        .orderBy(desc(sql`count(${progress.id})`))
+        .limit(50);
+
+    return leaderboard.map((entry, index) => ({
+        rank: index + 1,
+        user: {
+            name: entry.name || "Unknown",
+            username: entry.email.split('@')[0],
+            avatar: "" // Placeholder
+        },
+        points: Number(entry.points),
+        pathsCompleted: 0, // Placeholder as it's expensive to calc
+        streak: 0, // Placeholder
+        badges: 0, // Placeholder
+        change: 0 // Placeholder
+    }));
+}
 
 function getRankIcon(rank: number) {
     switch (rank) {
@@ -107,7 +64,7 @@ function getRankBadgeColor(rank: number) {
     }
 }
 
-function LeaderboardRow({ entry }: { entry: typeof leaderboardData[0] }) {
+function LeaderboardRow({ entry }: { entry: any }) {
     return (
         <div className="flex items-center gap-4 p-4 rounded-lg hover:bg-accent transition-colors">
             <div className="flex items-center justify-center w-12">
@@ -117,7 +74,7 @@ function LeaderboardRow({ entry }: { entry: typeof leaderboardData[0] }) {
             <Link href={`/profile/${entry.user.username}`} className="flex items-center gap-3 flex-1 min-w-0">
                 <Avatar className="h-12 w-12 ring-2 ring-background">
                     <AvatarImage src={entry.user.avatar} alt={entry.user.name} />
-                    <AvatarFallback>{entry.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>{entry.user.name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -137,6 +94,7 @@ function LeaderboardRow({ entry }: { entry: typeof leaderboardData[0] }) {
                     <p className="font-bold text-lg">{entry.points.toLocaleString()}</p>
                     <p className="text-muted-foreground">Points</p>
                 </div>
+                {/* 
                 <div className="text-center">
                     <p className="font-bold text-lg">{entry.pathsCompleted}</p>
                     <p className="text-muted-foreground">Paths</p>
@@ -155,8 +113,10 @@ function LeaderboardRow({ entry }: { entry: typeof leaderboardData[0] }) {
                     </div>
                     <p className="text-muted-foreground">Badges</p>
                 </div>
+                */}
             </div>
 
+            {/*
             {entry.change !== 0 && (
                 <div className="flex items-center gap-1">
                     <TrendingUp
@@ -167,11 +127,19 @@ function LeaderboardRow({ entry }: { entry: typeof leaderboardData[0] }) {
                     </span>
                 </div>
             )}
+            */}
         </div>
     )
 }
 
-export default function LeaderboardPage() {
+export default async function LeaderboardPage() {
+    const session = await getServerSession(authOptions);
+    const leaderboardData = await getLeaderboard();
+
+    const currentUserEntry = session?.user?.email
+        ? leaderboardData.find(e => e.user.username === session.user?.email?.split('@')[0])
+        : null;
+
     return (
         <div className="max-w-5xl mx-auto space-y-8">
             {/* Header */}
@@ -186,50 +154,56 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Your Rank
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">#42</div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            <span className="text-green-500">↑ 5</span> from last week
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Your Points
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">7,890</div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            <span className="text-green-500">+320</span> this week
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Current Streak
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-2">
-                            <Flame className="h-8 w-8 text-orange-500" />
-                            <div className="text-3xl font-bold">15</div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            days in a row
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            {currentUserEntry && (
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Your Rank
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold">#{currentUserEntry.rank}</div>
+                            {/*
+                            <p className="text-sm text-muted-foreground mt-1">
+                                <span className="text-green-500">↑ 0</span> from last week
+                            </p>
+                            */}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Your Points
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold">{currentUserEntry.points.toLocaleString()}</div>
+                            {/*
+                            <p className="text-sm text-muted-foreground mt-1">
+                                <span className="text-green-500">+0</span> this week
+                            </p>
+                            */}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Current Streak
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-2">
+                                <Flame className="h-8 w-8 text-orange-500" />
+                                <div className="text-3xl font-bold">0</div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                days in a row
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Leaderboard Tabs */}
             <Tabs defaultValue="all-time" className="w-full">
@@ -264,9 +238,7 @@ export default function LeaderboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {leaderboardData.slice(0, 5).map((entry) => (
-                                <LeaderboardRow key={entry.rank} entry={entry} />
-                            ))}
+                            <p className="text-muted-foreground text-center py-4">Coming soon...</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -280,9 +252,7 @@ export default function LeaderboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {leaderboardData.slice(0, 5).map((entry) => (
-                                <LeaderboardRow key={entry.rank} entry={entry} />
-                            ))}
+                            <p className="text-muted-foreground text-center py-4">Coming soon...</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

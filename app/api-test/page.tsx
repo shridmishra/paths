@@ -46,7 +46,7 @@ export default function ApiTestPage() {
     return (
         <div className="container mx-auto p-8 space-y-8">
             <div>
-                <h1 className="text-4xl font-bold mb-2">🎉 Frontend-Backend Connected!</h1>
+                <h1 className="text-4xl font-bold mb-2">Frontend-Backend Connected!</h1>
                 <p className="text-muted-foreground">
                     This page is fetching live data from the API backend
                 </p>

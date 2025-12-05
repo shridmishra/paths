@@ -15,6 +15,27 @@
       "when": 1764932179645,
       "tag": "0001_steep_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764934939111,
+      "tag": "0002_low_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764935498367,
+      "tag": "0003_pretty_penance",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764935672390,
+      "tag": "0004_orange_star_brand",
+      "breakpoints": true
     }
   ]
 }

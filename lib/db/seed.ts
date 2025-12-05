@@ -12,7 +12,7 @@ const client = postgres(connectionString, { prepare: false });
 const db = drizzle(client, { schema });
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Starting database seed...');
 
   const adminEmail = 'paths@admin.com';
   const adminPassword = 'paths#admin';
@@ -32,7 +32,7 @@ async function main() {
       password: hashedPassword,
       role: 'admin',
     }).returning();
-    console.log('✅ Created super admin:', user.email);
+    console.log('Created super admin:', user.email);
   } else {
     // Update existing admin to ensure password/role are correct
     [user] = await db.update(users)
@@ -43,7 +43,7 @@ async function main() {
       })
       .where(eq(users.email, adminEmail))
       .returning();
-    console.log('✅ Updated super admin:', user.email);
+    console.log('Updated super admin:', user.email);
   }
 
   // Create learning paths
@@ -70,7 +70,7 @@ async function main() {
     await db.insert(paths).values(p).onConflictDoNothing().execute();
   }
 
-  console.log('✅ Created learning paths');
+  console.log('Created learning paths');
 
   // Create topics for frontend path
   const topicsData = [
@@ -101,7 +101,7 @@ async function main() {
     await db.insert(topics).values(t).onConflictDoNothing().execute();
   }
 
-  console.log('✅ Created topics');
+  console.log('Created topics');
 
   // Create questions
   const questionsData = [
@@ -166,15 +166,15 @@ async function main() {
     }
   }
 
-  console.log('✅ Created questions');
+  console.log('Created questions');
 
   // Removed static progress generation as requested
   
-  console.log('🎉 Database seeding completed!');
+  console.log('Database seeding completed!');
   process.exit(0);
 }
 
 main().catch((e) => {
-  console.error('❌ Error seeding database:', e);
+  console.error('Error seeding database:', e);
   process.exit(1);
 });

@@ -126,10 +126,10 @@ export default async function HomePage() {
                         Structured learning journeys designed by industry experts. Stop guessing what to learn next and start building your future.
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-4">
-                        <Button size="lg" className="h-12 px-8 rounded-full text-base">
+                        <Button size="lg" className="h-12 px-8 rounded-full text-base cursor-pointer">
                             Explore Paths
                         </Button>
-                        <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-base bg-background/50 backdrop-blur-sm">
+                        <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-base bg-background/50 backdrop-blur-sm cursor-pointer">
                             View Leaderboard
                         </Button>
                     </div>
@@ -140,7 +140,7 @@ export default async function HomePage() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-semibold tracking-tight">Featured Paths</h2>
-                    <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+                    <Button variant="ghost" className="text-muted-foreground hover:text-primary cursor-pointer">
                         View All <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </div>
@@ -149,19 +149,19 @@ export default async function HomePage() {
                     <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
                         <TabsTrigger
                             value="all"
-                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
                         >
                             All Paths
                         </TabsTrigger>
                         <TabsTrigger
                             value="trending"
-                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
                         >
                             Trending
                         </TabsTrigger>
                         <TabsTrigger
                             value="new"
-                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                            className="rounded-none border-b-2 border-transparent px-0 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none cursor-pointer"
                         >
                             Newest
                         </TabsTrigger>
