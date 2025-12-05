@@ -8,12 +8,7 @@ export class QuestionsService {
     difficulty?: string;
     topicId?: string;
   }): Promise<Question[]> {
-    const where: { type?: string; difficulty?: string; topicId?: string } = {};
-    if (filters.type) where.type = filters.type;
-    if (filters.difficulty) where.difficulty = filters.difficulty;
-    if (filters.topicId) where.topicId = filters.topicId;
-
-    return questionsRepository.findAll(where);
+    return questionsRepository.findAll(filters);
   }
 
   async getQuestionById(id: string): Promise<Question> {
@@ -42,9 +37,7 @@ export class QuestionsService {
       answer: data.answer,
       difficulty: data.difficulty || 'medium',
       type: data.type || 'quiz',
-      topic: {
-        connect: { id: data.topicId },
-      },
+      topicId: data.topicId,
     });
   }
 

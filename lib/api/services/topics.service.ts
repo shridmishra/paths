@@ -34,9 +34,7 @@ export class TopicsService {
       title: data.title,
       description: data.description,
       order: data.order || 0,
-      path: {
-        connect: { id: data.pathId },
-      },
+      pathId: data.pathId,
     });
   }
 

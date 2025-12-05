@@ -1,5 +1,9 @@
-import { prisma } from '@/lib/db';
-import type { Path, Prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { paths, topics, type paths as PathType } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+export type Path = typeof paths.$inferSelect;
+export type NewPath = typeof paths.$inferInsert;
 
 /**
  * Paths Repository
@@ -7,23 +11,20 @@ import type { Path, Prisma } from '@/lib/db';
  */
 export class PathsRepository {
   /**
-   * Find all paths with optional filtering
+   * Find all paths
    */
-  async findAll(include?: Prisma.PathInclude): Promise<Path[]> {
-    return prisma.path.findMany({
-      include: include || {
+  async findAll() {
+    return db.query.paths.findMany({
+      with: {
         user: {
-          select: { id: true, name: true, email: true },
+          columns: { id: true, name: true, email: true },
         },
         topics: {
-          include: {
-            _count: {
-              select: { questions: true },
+          with: {
+            questions: {
+              columns: { id: true },
             },
           },
-        },
-        _count: {
-          select: { topics: true },
         },
       },
     });
@@ -32,18 +33,18 @@ export class PathsRepository {
   /**
    * Find path by ID
    */
-  async findById(id: string, include?: Prisma.PathInclude): Promise<Path | null> {
-    return prisma.path.findUnique({
-      where: { id },
-      include: include || {
+  async findById(id: string) {
+    return db.query.paths.findFirst({
+      where: eq(paths.id, id),
+      with: {
         user: {
-          select: { id: true, name: true, email: true },
+          columns: { id: true, name: true, email: true },
         },
         topics: {
-          include: {
+          orderBy: (topics, { asc }) => [asc(topics.order)],
+          with: {
             questions: true,
           },
-          orderBy: { order: 'asc' },
         },
       },
     });
@@ -52,14 +53,14 @@ export class PathsRepository {
   /**
    * Find paths by user ID
    */
-  async findByUserId(userId: string): Promise<Path[]> {
-    return prisma.path.findMany({
-      where: { userId },
-      include: {
+  async findByUserId(userId: string) {
+    return db.query.paths.findMany({
+      where: eq(paths.userId, userId),
+      with: {
         topics: {
-          include: {
-            _count: {
-              select: { questions: true },
+          with: {
+            questions: {
+              columns: { id: true },
             },
           },
         },
@@ -70,42 +71,40 @@ export class PathsRepository {
   /**
    * Create a new path
    */
-  async create(data: Prisma.PathCreateInput): Promise<Path> {
-    return prisma.path.create({
-      data,
-      include: {
-        topics: true,
-      },
-    });
+  async create(data: NewPath) {
+    const [path] = await db.insert(paths).values(data).returning();
+    return path;
   }
 
   /**
    * Update path by ID
    */
-  async update(id: string, data: Prisma.PathUpdateInput): Promise<Path> {
-    return prisma.path.update({
-      where: { id },
-      data,
-    });
+  async update(id: string, data: Partial<NewPath>) {
+    const [path] = await db
+      .update(paths)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(paths.id, id))
+      .returning();
+    return path;
   }
 
   /**
    * Delete path by ID
    */
-  async delete(id: string): Promise<Path> {
-    return prisma.path.delete({
-      where: { id },
-    });
+  async delete(id: string) {
+    const [path] = await db.delete(paths).where(eq(paths.id, id)).returning();
+    return path;
   }
 
   /**
    * Check if path exists
    */
   async exists(id: string): Promise<boolean> {
-    const count = await prisma.path.count({
-      where: { id },
-    });
-    return count > 0;
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(paths)
+      .where(eq(paths.id, id));
+    return Number(result[0]?.count) > 0;
   }
 }
 

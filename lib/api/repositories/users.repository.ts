@@ -1,5 +1,9 @@
-import { prisma } from '@/lib/db';
-import type { User, Prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { users, type users as UserType } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 
 /**
  * Users Repository
@@ -7,14 +11,13 @@ import type { User, Prisma } from '@/lib/db';
  */
 export class UsersRepository {
   /**
-   * Find all users with optional filtering
+   * Find all users
    */
-  async findAll(include?: Prisma.UserInclude): Promise<User[]> {
-    return prisma.user.findMany({
-      include: include || {
-        _count: {
-          select: { paths: true, progress: true },
-        },
+  async findAll() {
+    return db.query.users.findMany({
+      with: {
+        paths: true,
+        progress: true,
       },
     });
   }
@@ -22,13 +25,13 @@ export class UsersRepository {
   /**
    * Find user by ID
    */
-  async findById(id: string, include?: Prisma.UserInclude): Promise<User | null> {
-    return prisma.user.findUnique({
-      where: { id },
-      include: include || {
+  async findById(id: string) {
+    return db.query.users.findFirst({
+      where: eq(users.id, id),
+      with: {
         paths: true,
         progress: {
-          include: {
+          with: {
             question: true,
           },
         },
@@ -39,61 +42,62 @@ export class UsersRepository {
   /**
    * Find user by email
    */
-  async findByEmail(email: string): Promise<User | null> {
-    return prisma.user.findUnique({
-      where: { email },
+  async findByEmail(email: string) {
+    return db.query.users.findFirst({
+      where: eq(users.email, email),
     });
   }
 
   /**
    * Create a new user
    */
-  async create(data: Prisma.UserCreateInput): Promise<User> {
-    return prisma.user.create({
-      data,
-    });
+  async create(data: NewUser) {
+    const [user] = await db.insert(users).values(data).returning();
+    return user;
   }
 
   /**
    * Update user by ID
    */
-  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return prisma.user.update({
-      where: { id },
-      data,
-    });
+  async update(id: string, data: Partial<NewUser>) {
+    const [user] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   /**
    * Delete user by ID
    */
-  async delete(id: string): Promise<User> {
-    return prisma.user.delete({
-      where: { id },
-    });
+  async delete(id: string) {
+    const [user] = await db.delete(users).where(eq(users.id, id)).returning();
+    return user;
   }
 
   /**
    * Check if user exists by ID
    */
   async exists(id: string): Promise<boolean> {
-    const count = await prisma.user.count({
-      where: { id },
-    });
-    return count > 0;
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.id, id));
+    return Number(result[0]?.count) > 0;
   }
 
   /**
    * Check if email is already taken
    */
   async emailExists(email: string, excludeId?: string): Promise<boolean> {
-    const count = await prisma.user.count({
-      where: {
-        email,
-        ...(excludeId && { id: { not: excludeId } }),
-      },
-    });
-    return count > 0;
+    const result = await db.execute(sql`
+      SELECT count(*) as count FROM ${users} 
+      WHERE ${users.email} = ${email} 
+      ${excludeId ? sql`AND ${users.id} != ${excludeId}` : sql``}
+    `);
+    
+    return Number(result[0]?.count) > 0;
   }
 }
 

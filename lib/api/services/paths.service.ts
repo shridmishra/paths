@@ -45,9 +45,7 @@ export class PathsService {
       description: data.description,
       difficulty: data.difficulty || 'beginner',
       category: data.category || 'general',
-      user: {
-        connect: { id: data.userId },
-      },
+      userId: data.userId,
     });
   }
 

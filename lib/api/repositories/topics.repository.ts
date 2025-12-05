@@ -1,55 +1,60 @@
-import { prisma } from '@/lib/db';
-import type { Topic, Prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { topics, type topics as TopicType } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+export type Topic = typeof topics.$inferSelect;
+export type NewTopic = typeof topics.$inferInsert;
 
 export class TopicsRepository {
-  async findAll(include?: Prisma.TopicInclude): Promise<Topic[]> {
-    return prisma.topic.findMany({
-      include: include || {
+  async findAll() {
+    return db.query.topics.findMany({
+      with: {
         path: {
-          select: { id: true, title: true },
+          columns: { id: true, title: true },
         },
-        _count: {
-          select: { questions: true },
+        questions: {
+          columns: { id: true },
         },
       },
-      orderBy: { order: 'asc' },
+      orderBy: (topics, { asc }) => [asc(topics.order)],
     });
   }
 
-  async findById(id: string, include?: Prisma.TopicInclude): Promise<Topic | null> {
-    return prisma.topic.findUnique({
-      where: { id },
-      include: include || {
+  async findById(id: string) {
+    return db.query.topics.findFirst({
+      where: eq(topics.id, id),
+      with: {
         path: true,
         questions: true,
       },
     });
   }
 
-  async create(data: Prisma.TopicCreateInput): Promise<Topic> {
-    return prisma.topic.create({
-      data,
-    });
+  async create(data: NewTopic) {
+    const [topic] = await db.insert(topics).values(data).returning();
+    return topic;
   }
 
-  async update(id: string, data: Prisma.TopicUpdateInput): Promise<Topic> {
-    return prisma.topic.update({
-      where: { id },
-      data,
-    });
+  async update(id: string, data: Partial<NewTopic>) {
+    const [topic] = await db
+      .update(topics)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(topics.id, id))
+      .returning();
+    return topic;
   }
 
-  async delete(id: string): Promise<Topic> {
-    return prisma.topic.delete({
-      where: { id },
-    });
+  async delete(id: string) {
+    const [topic] = await db.delete(topics).where(eq(topics.id, id)).returning();
+    return topic;
   }
 
   async exists(id: string): Promise<boolean> {
-    const count = await prisma.topic.count({
-      where: { id },
-    });
-    return count > 0;
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(topics)
+      .where(eq(topics.id, id));
+    return Number(result[0]?.count) > 0;
   }
 }
 

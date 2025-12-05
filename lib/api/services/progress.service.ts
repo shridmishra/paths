@@ -8,18 +8,15 @@ export class ProgressService {
   }
 
   async getUserStats(userId: string) {
-    const totalProgress = await progressRepository.count({ userId });
-    const completedProgress = await progressRepository.count({ userId, completed: true });
+    const totalProgress = await progressRepository.countByUserId(userId);
+    const completedProgress = await progressRepository.countByUserId(userId, true);
     
-    const averageScore = await progressRepository.aggregate({
-      where: { userId, completed: true },
-      _avg: { score: true },
-    });
+    const averageScore = await progressRepository.getAverageScore(userId);
 
     return {
       total: totalProgress,
       completed: completedProgress,
-      averageScore: averageScore._avg?.score || 0,
+      averageScore: averageScore,
       completionRate: totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0,
     };
   }
@@ -29,7 +26,7 @@ export class ProgressService {
     questionId: string;
     completed?: boolean;
     score?: number;
-  }): Promise<Progress> {
+  }) {
     if (!data.userId || !data.questionId) {
       throw new BadRequestError('userId and questionId are required');
     }
@@ -38,16 +35,9 @@ export class ProgressService {
       data.userId,
       data.questionId,
       {
-        user: { connect: { id: data.userId } },
-        question: { connect: { id: data.questionId } },
-        completed: data.completed || false,
-        score: data.score || null,
+        completed: data.completed,
+        score: data.score,
         completedAt: data.completed ? new Date() : null,
-      },
-      {
-        completed: data.completed ?? undefined,
-        score: data.score ?? undefined,
-        completedAt: data.completed ? new Date() : undefined,
       }
     );
   }

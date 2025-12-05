@@ -1,17 +1,13 @@
-/// <reference types="node" />
-import { PrismaClient } from '@prisma/client';
 
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting your database connection limit.
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+import 'server-only';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  });
+const connectionString = process.env.DATABASE_URL!;
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// Disable prefetch as it is not supported for "Transaction" pool mode
+const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client, { schema });
 
-export * from '@prisma/client';
-
+export * from './schema';
